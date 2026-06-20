@@ -9,10 +9,10 @@ export interface VehicleSpec {
 }
 
 export const VEHICLES: Record<VehicleType, VehicleSpec> = {
-  rover: { label: "Rover", turnRate: 150, speedScale: 1 },
-  drone: { label: "Drone", turnRate: 240, speedScale: 1.4 },
-  car: { label: "Car", turnRate: 85, speedScale: 1.2 },
-  humanoid: { label: "Humanoid", turnRate: 170, speedScale: 0.7 },
+  rover: { label: "Rover", turnRate: 260, speedScale: 1 },
+  drone: { label: "Drone", turnRate: 400, speedScale: 1.4 },
+  car: { label: "Car", turnRate: 160, speedScale: 1.2 },
+  humanoid: { label: "Humanoid", turnRate: 300, speedScale: 0.7 },
 };
 
 export const VEHICLE_TYPES = ["rover", "drone", "car", "humanoid"] as const;

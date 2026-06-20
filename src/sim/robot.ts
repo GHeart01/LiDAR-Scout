@@ -191,10 +191,12 @@ export class Robot {
 
   private steerMove(dt: number, desired: number): void {
     this.turnToward(desired, dt);
-    if (Math.abs(angNorm(desired - this.heading)) < 0.7) {
-      this.position.x += Math.cos(this.heading) * this.speed * dt;
-      this.position.z += Math.sin(this.heading) * this.speed * dt;
-    }
+    // Keep moving while turning: full speed when aligned, easing to ~45% on a
+    // hard turn (never stops dead to rotate).
+    const diff = Math.abs(angNorm(desired - this.heading));
+    const factor = 0.45 + 0.55 * Math.max(0, Math.cos(diff));
+    this.position.x += Math.cos(this.heading) * this.speed * factor * dt;
+    this.position.z += Math.sin(this.heading) * this.speed * factor * dt;
   }
 
   private clamp(world: World): void {
