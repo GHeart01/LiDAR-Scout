@@ -16,6 +16,7 @@ export default function App() {
   const webgpuAvailable = useStore((s) => s.webgpuAvailable);
   const activeBackend = useStore((s) => s.activeBackend);
   const robotCount = useStore((s) => s.robotCount);
+  const vehicle = useStore((s) => s.vehicle);
   const setWebgpuAvailable = useStore((s) => s.setWebgpuAvailable);
   const setActiveBackend = useStore((s) => s.setActiveBackend);
 
@@ -33,10 +34,14 @@ export default function App() {
     setActiveBackend(chooseBackend(rendererMode, webgpuAvailable));
   }, [rendererMode, webgpuAvailable, setActiveBackend]);
 
-  // Keep the world's robot count in sync with the UI.
+  // Keep the world's robot count + vehicle kinematics in sync with the UI.
   useEffect(() => {
     world.setRobotCount(robotCount);
   }, [robotCount]);
+
+  useEffect(() => {
+    world.setVehicle(vehicle);
+  }, [vehicle, robotCount]);
 
   const handleRendererError = () => setActiveBackend("webgl");
 

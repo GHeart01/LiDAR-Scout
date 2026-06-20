@@ -4,6 +4,8 @@ import { OccupancyGrid } from "./grid";
 import { Robot } from "./robot";
 import { mulberry32, Rng } from "./rng";
 import { SensorParams, DEFAULT_SENSOR } from "./sensor";
+import { VehicleType, VEHICLES } from "./vehicles";
+import { DEG } from "./constants";
 
 export interface StepParams {
   driveSpeed: number;
@@ -24,10 +26,20 @@ export class World {
   time = 0;
   running = false;
   epoch = 0; // bumped on reset so renderers can clear cached buffers
+  vehicle: VehicleType = "rover";
+  speedScale = 1;
 
   constructor() {
     this.grid = new OccupancyGrid(ARENA, 0.6);
     this.setRobotCount(2);
+  }
+
+  // Apply a vehicle type's kinematics to every robot.
+  setVehicle(type: VehicleType): void {
+    this.vehicle = type;
+    const spec = VEHICLES[type];
+    this.speedScale = spec.speedScale;
+    for (const r of this.robots) r.turnRate = spec.turnRate * DEG;
   }
 
   // Even spread of start poses near the centre.
@@ -45,6 +57,7 @@ export class World {
     }
     if (this.robots.length > n) this.robots.length = n;
     this.placeRobots();
+    this.setVehicle(this.vehicle); // keep kinematics consistent for new robots
   }
 
   private placeRobots(): void {

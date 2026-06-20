@@ -232,7 +232,7 @@ export class Robot {
   }
 
   update(dt: number, world: World, params: StepParams, claimed: Set<number>): void {
-    this.speed = params.driveSpeed;
+    this.speed = params.driveSpeed * world.speedScale;
     this.sense(dt, world, params);
     this.timer += dt;
 

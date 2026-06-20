@@ -15,6 +15,9 @@ scene with live telemetry and a finite-state-machine view.
   the map grows. Exploration ends when no reachable frontier remains.
 - **Multiple robots (1–4)** sharing one occupancy grid (collaborative mapping)
   with simple inter-robot collision avoidance.
+- **Selectable vehicles** — Rover, Drone (hovering quad-rotor), Car (rolling
+  wheels), and Humanoid (walking) — each with its own model, animation, and
+  kinematics (turn rate / speed).
 - **Realistic LiDAR sensor model** — configurable range, field of view, angular
   resolution (beam count), Gaussian range noise, and dropout.
 - **Occupancy-grid SLAM-lite** — ray-traced free/occupied cells build a
@@ -104,7 +107,8 @@ WebGPU means porting the effects to three's TSL/node pipeline first.
 
 - **Explore / Stop** — start or stop autonomy. **Reset** — clear the map and
   re-place robots. **Pause** — freeze the sim.
-- **Scenario** — Scatter / Maze / Warehouse / Room. **Robots** — 1–4.
+- **Scenario** — Scatter / Maze / Warehouse / Room. **Vehicle** — Rover / Drone
+  / Car / Humanoid. **Robots** — 1–4.
 - **Discovered map** — toggle the occupancy overlay.
 - **Sliders** — sim/drive speed, safety distance, and the full sensor model
   (range, sweep rate, resolution, FOV, noise, dropout).

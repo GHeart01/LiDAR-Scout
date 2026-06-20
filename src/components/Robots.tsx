@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { ARENA, DEG } from "../sim/constants";
 import { world } from "../sim/instance";
 import { useStore } from "../store";
+import VehicleModel from "./Vehicles";
 
 const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const HIT = new THREE.Vector3();
@@ -166,23 +167,22 @@ function PathLine({ index }: { index: number }) {
 
 function RobotView({ index }: { index: number }) {
   const group = useRef<THREE.Group>(null);
-  const mast = useRef<THREE.Mesh>(null);
   const ring = useRef<THREE.LineLoop>(null);
   const dragging = useRef(false);
   const controls = useThree((s) => s.controls) as unknown as { enabled: boolean } | undefined;
   const selected = useStore((s) => s.selectedRobot === index);
+  const vehicle = useStore((s) => s.vehicle);
   const setSelectedRobot = useStore((s) => s.setSelectedRobot);
 
   const robot = world.robots[index];
   const ringGeom = useMemo(() => circleGeometry(1.7), []);
   const color = robot?.color ?? "#2dd4bf";
 
-  useFrame((_, delta) => {
+  useFrame(() => {
     const r = world.robots[index];
     if (!r || !group.current) return;
     group.current.position.set(r.position.x, 0, r.position.z);
     group.current.rotation.y = -r.heading;
-    if (mast.current) mast.current.rotation.y += delta * 6;
     if (ring.current) ring.current.position.set(r.position.x, 0.06, r.position.z);
   });
 
@@ -212,18 +212,7 @@ function RobotView({ index }: { index: number }) {
   return (
     <>
       <group ref={group} onPointerDown={grab} onPointerUp={release} onPointerMove={move}>
-        <mesh position={[0, 0.35, 0]} castShadow>
-          <cylinderGeometry args={[1.1, 1.1, 0.7, 26]} />
-          <meshStandardMaterial color={color} metalness={0.35} roughness={0.4} emissive={color} emissiveIntensity={selected ? 0.7 : 0.35} />
-        </mesh>
-        <mesh position={[1.0, 0.45, 0]} rotation={[0, 0, -Math.PI / 2]}>
-          <coneGeometry args={[0.48, 1.05, 18]} />
-          <meshStandardMaterial color="#06241f" />
-        </mesh>
-        <mesh ref={mast} position={[0, 0.95, 0]}>
-          <cylinderGeometry args={[0.26, 0.26, 0.5, 16]} />
-          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.2} toneMapped={false} />
-        </mesh>
+        <VehicleModel type={vehicle} index={index} color={color} selected={selected} />
       </group>
 
       {selected && (

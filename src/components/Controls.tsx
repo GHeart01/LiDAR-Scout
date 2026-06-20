@@ -1,6 +1,7 @@
 import { world } from "../sim/instance";
 import { useStore, type NumericParam } from "../store";
 import { SCENARIO_NAMES, type ScenarioName } from "../scenarios";
+import { VEHICLE_TYPES, VEHICLES, type VehicleType } from "../sim/vehicles";
 
 function Slider({ label, paramKey, min, max, step, format }: {
   label: string;
@@ -32,11 +33,13 @@ export default function Controls() {
   const paused = useStore((s) => s.paused);
   const showMap = useStore((s) => s.showMap);
   const robotCount = useStore((s) => s.robotCount);
+  const vehicle = useStore((s) => s.vehicle);
   const scenario = useStore((s) => s.scenario);
   const setRunning = useStore((s) => s.setRunning);
   const setPaused = useStore((s) => s.setPaused);
   const setShowMap = useStore((s) => s.setShowMap);
   const setRobotCount = useStore((s) => s.setRobotCount);
+  const setVehicle = useStore((s) => s.setVehicle);
   const setSelectedRobot = useStore((s) => s.setSelectedRobot);
   const loadScenario = useStore((s) => s.loadScenario);
   const resetTelemetry = useStore((s) => s.resetTelemetry);
@@ -92,6 +95,19 @@ export default function Controls() {
             onClick={() => pickScenario(name)}
           >
             {name}
+          </button>
+        ))}
+      </div>
+
+      <label className="field">Vehicle</label>
+      <div className="seg">
+        {VEHICLE_TYPES.map((v: VehicleType) => (
+          <button
+            key={v}
+            className={"seg-btn" + (vehicle === v ? " active" : "")}
+            onClick={() => setVehicle(v)}
+          >
+            {VEHICLES[v].label}
           </button>
         ))}
       </div>

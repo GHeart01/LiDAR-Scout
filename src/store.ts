@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { FsmState } from "./sim/robot";
 import type { RendererMode, Backend } from "./renderer";
 import { SCENARIOS, type ObstacleDef, type ScenarioName } from "./scenarios";
+import type { VehicleType } from "./sim/vehicles";
 
 let nextId = 1;
 
@@ -65,6 +66,7 @@ interface StoreState {
 
   robotCount: number;
   selectedRobot: number;
+  vehicle: VehicleType;
   scenario: ScenarioName;
   obstacles: Obstacle[];
 
@@ -87,6 +89,7 @@ interface StoreState {
   setRunning: (running: boolean) => void;
   setSelectedRobot: (i: number) => void;
   setRobotCount: (n: number) => void;
+  setVehicle: (v: VehicleType) => void;
   setScenario: (s: ScenarioName) => void;
   addObstacle: (o: ObstacleDef) => void;
   removeObstacle: () => void;
@@ -119,6 +122,7 @@ export const useStore = create<StoreState>((set) => ({
 
   robotCount: 2,
   selectedRobot: 0,
+  vehicle: "rover",
   scenario: "Scatter",
   obstacles: obstaclesFrom("Scatter"),
 
@@ -139,6 +143,7 @@ export const useStore = create<StoreState>((set) => ({
   setRunning: (running) => set({ running }),
   setSelectedRobot: (selectedRobot) => set({ selectedRobot }),
   setRobotCount: (robotCount) => set({ robotCount }),
+  setVehicle: (vehicle) => set({ vehicle }),
   setScenario: (scenario) => set({ scenario }),
 
   addObstacle: (o) => set((s) => ({ obstacles: [...s.obstacles, { id: nextId++, ...o }] })),
