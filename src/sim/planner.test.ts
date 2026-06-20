@@ -52,6 +52,16 @@ describe("aStar", () => {
     expect(path!.length).toBeGreaterThan(2);
   });
 
+  it("keeps a clearance from obstacles when inflated", () => {
+    const g = new OccupancyGrid(5, 1);
+    allFree(g);
+    g.setOccupied(5, 5);
+    // Goal sits right next to the obstacle: blocked once we inflate by a cell.
+    expect(aStar(g, { cx: 0, cz: 5 }, { cx: 5, cz: 4 }, { inflate: 1 })).toBeNull();
+    // Without inflation it's reachable.
+    expect(aStar(g, { cx: 0, cz: 5 }, { cx: 5, cz: 4 })).not.toBeNull();
+  });
+
   it("blocks unknown cells unless allowUnknown is set", () => {
     const g = new OccupancyGrid(3, 1);
     // Only a couple of free cells; the rest unknown.

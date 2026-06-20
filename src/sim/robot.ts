@@ -2,14 +2,16 @@ import * as THREE from "three";
 import { DEG } from "./constants";
 import { Cell } from "./grid";
 import { aStar } from "./planner";
-import { chooseFrontier } from "./explorer";
+import { nearestReachableFrontier } from "./explorer";
 import { inFov, noisyRange, dropped } from "./sensor";
 import type { World, StepParams } from "./world";
 
 export type FsmState = "IDLE" | "PLAN" | "NAV" | "AVOID" | "DONE";
 
-const REPLAN_INTERVAL = 4.0; // re-plan against the updated map this often
+const REPLAN_INTERVAL = 3.0; // re-plan against the updated map this often
 const SENSOR_Y = 0.5;
+const INFLATE = 2; // grid cells of obstacle clearance (~robot radius)
+const MAP_START = 0.03; // coverage below which we're still doing the first scan
 
 function angNorm(a: number): number {
   return Math.atan2(Math.sin(a), Math.cos(a));
@@ -104,6 +106,10 @@ export class Robot {
   }
 
   private sense(dt: number, world: World, params: StepParams): void {
+    // The robot's own cell is always free/observed.
+    const oc = world.grid.worldToCell(this.position.x, this.position.z);
+    world.grid.setFree(oc.cx, oc.cz);
+
     this.maxRange = params.sensor.range;
     const k = Math.max(1, Math.round(360 / params.sensor.beams));
     this.acc += params.sweepRate * dt;
@@ -183,23 +189,28 @@ export class Robot {
   }
 
   // ---- Planning / behaviour ---------------------------------------------
-  private plan(world: World, claimed: Set<number>): void {
+  // Spin slowly in place so a (possibly narrow-FOV) sensor sweeps the area.
+  private idleScan(dt: number): void {
+    this.heading += this.turnRate * dt * 0.4;
+  }
+
+  private plan(dt: number, world: World, claimed: Set<number>): void {
     const cell = world.grid.worldToCell(this.position.x, this.position.z);
-    const choice = chooseFrontier(world.grid, cell, claimed);
-    if (!choice) {
-      this.targetFrontier = -1;
-      this.path = null;
-      this.enter("DONE");
+    const target = nearestReachableFrontier(world.grid, cell, claimed, INFLATE);
+
+    if (!target) {
+      // Nothing reachable: either still mapping (keep scanning) or finished.
+      if (world.grid.coverage() < MAP_START) this.idleScan(dt);
+      else this.enter("DONE");
       return;
     }
-    const path = aStar(world.grid, cell, choice.cell, { allowUnknown: false });
+
+    const path = aStar(world.grid, cell, target.cell, { inflate: INFLATE });
     if (!path) {
-      // Unreachable for now: claim it so we (and others) skip it this tick.
-      claimed.add(choice.index);
-      this.targetFrontier = -1;
-      return; // remain in PLAN, retry next frame
+      if (world.grid.coverage() < MAP_START) this.idleScan(dt);
+      return; // stay in PLAN, try again next frame
     }
-    this.targetFrontier = choice.index;
+    this.targetFrontier = target.index;
     this.path = path;
     this.pathIndex = Math.min(1, path.length - 1);
     this.enter("NAV");
@@ -218,7 +229,7 @@ export class Robot {
     const c = world.grid.cellCenter(wp.cx, wp.cz);
     const dx = c.x - this.position.x;
     const dz = c.z - this.position.z;
-    if (Math.hypot(dx, dz) < world.grid.cell * 0.6) {
+    if (Math.hypot(dx, dz) < world.grid.cell * 0.7) {
       this.pathIndex++;
       if (this.pathIndex >= this.path.length) this.enter("PLAN");
       return;
@@ -243,7 +254,7 @@ export class Robot {
       case "IDLE":
         break;
       case "PLAN":
-        this.plan(world, claimed);
+        this.plan(dt, world, claimed);
         break;
       case "NAV":
         if (front < params.safeDist) this.enter("AVOID");
@@ -255,6 +266,8 @@ export class Robot {
         if (this.timer > 0.6 && front > params.safeDist) this.enter("PLAN");
         break;
       case "DONE":
+        // Re-evaluate periodically: another robot may have opened up new area.
+        if (this.timer > 3) this.enter("PLAN");
         break;
     }
     this.clamp(world);

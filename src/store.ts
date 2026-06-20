@@ -70,12 +70,12 @@ interface StoreState {
   scenario: ScenarioName;
   obstacles: Obstacle[];
 
-  // live readouts
-  readout: Readout;
+  // live readouts (per robot)
+  readouts: Readout[];
   coverage: number;
   fps: number;
   coverageHistory: number[];
-  frontHistory: number[];
+  frontHistories: number[][];
 
   // renderer
   rendererMode: RendererMode;
@@ -95,9 +95,9 @@ interface StoreState {
   removeObstacle: () => void;
   setObstaclePos: (id: number, x: number, z: number) => void;
   loadScenario: (s: ScenarioName) => void;
-  setReadout: (r: Readout) => void;
+  setReadouts: (r: Readout[]) => void;
   setStats: (coverage: number, fps: number) => void;
-  pushTelemetry: (coveragePct: number, front: number) => void;
+  pushTelemetry: (coveragePct: number, fronts: number[]) => void;
   resetTelemetry: () => void;
   setRendererMode: (m: RendererMode) => void;
   setWebgpuAvailable: (b: boolean) => void;
@@ -126,11 +126,11 @@ export const useStore = create<StoreState>((set) => ({
   scenario: "Scatter",
   obstacles: obstaclesFrom("Scatter"),
 
-  readout: { state: "IDLE", front: 0, nearest: 0, heading: 0, x: 0, z: 0 },
+  readouts: [],
   coverage: 0,
   fps: 0,
   coverageHistory: [],
-  frontHistory: [],
+  frontHistories: [],
 
   rendererMode: initialRendererMode(),
   webgpuAvailable: null,
@@ -152,14 +152,14 @@ export const useStore = create<StoreState>((set) => ({
     set((s) => ({ obstacles: s.obstacles.map((o) => (o.id === id ? { ...o, x, z } : o)) })),
   loadScenario: (scenario) => set({ scenario, obstacles: obstaclesFrom(scenario) }),
 
-  setReadout: (readout) => set({ readout }),
+  setReadouts: (readouts) => set({ readouts }),
   setStats: (coverage, fps) => set({ coverage, fps }),
-  pushTelemetry: (coveragePct, front) =>
+  pushTelemetry: (coveragePct, fronts) =>
     set((s) => ({
       coverageHistory: [...s.coverageHistory.slice(-(HISTORY - 1)), coveragePct],
-      frontHistory: [...s.frontHistory.slice(-(HISTORY - 1)), front],
+      frontHistories: fronts.map((f, i) => [...(s.frontHistories[i] ?? []).slice(-(HISTORY - 1)), f]),
     })),
-  resetTelemetry: () => set({ coverageHistory: [], frontHistory: [] }),
+  resetTelemetry: () => set({ coverageHistory: [], frontHistories: [] }),
 
   setRendererMode: (rendererMode) => {
     try {

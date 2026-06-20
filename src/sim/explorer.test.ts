@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { OccupancyGrid } from "./grid";
-import { chooseFrontier, fullyExplored } from "./explorer";
+import { chooseFrontier, fullyExplored, rankedFrontiers } from "./explorer";
 
 describe("chooseFrontier", () => {
   it("picks the nearest unclaimed frontier", () => {
@@ -21,6 +21,16 @@ describe("chooseFrontier", () => {
     const claimed = new Set([g.index(2, 2)]);
     const picked = chooseFrontier(g, { cx: 1, cz: 1 }, claimed);
     expect(picked!.cell).toEqual({ cx: 9, cz: 9 });
+  });
+
+  it("ranks frontiers nearest-first and skips claimed/blacklisted", () => {
+    const g = new OccupancyGrid(6, 1);
+    g.setFree(2, 2);
+    g.setFree(9, 9);
+    const r = rankedFrontiers(g, { cx: 1, cz: 1 }, new Set(), new Set());
+    expect(r[0].cell).toEqual({ cx: 2, cz: 2 });
+    const r2 = rankedFrontiers(g, { cx: 1, cz: 1 }, new Set([g.index(2, 2)]), new Set());
+    expect(r2[0].cell).toEqual({ cx: 9, cz: 9 });
   });
 
   it("reports fully explored when no frontiers remain", () => {

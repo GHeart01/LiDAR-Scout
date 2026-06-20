@@ -2,6 +2,7 @@ import { OccupancyGrid, Cell } from "./grid";
 
 interface Options {
   allowUnknown?: boolean; // let paths cross unobserved cells (optimistic)
+  inflate?: number; // keep this many cells clear of obstacles (robot radius)
 }
 
 // A* over the occupancy grid with 8-connectivity and an octile heuristic.
@@ -17,10 +18,21 @@ export function aStar(
   const startIdx = grid.index(start.cx, start.cz);
   const goalIdx = grid.index(goal.cx, goal.cz);
 
+  const inflate = opts.inflate ?? 0;
+  const occupiedNear = (cx: number, cz: number): boolean => {
+    for (let dz = -inflate; dz <= inflate; dz++) {
+      for (let dx = -inflate; dx <= inflate; dx++) {
+        if (grid.get(cx + dx, cz + dz) === 2) return true;
+      }
+    }
+    return false;
+  };
+
   const passable = (cx: number, cz: number): boolean => {
     const s = grid.get(cx, cz);
     if (s === 2) return false;
-    if (s === 0) return !!opts.allowUnknown;
+    if (s === 0 && !opts.allowUnknown) return false;
+    if (inflate > 0 && occupiedNear(cx, cz)) return false;
     return true;
   };
 

@@ -1,5 +1,7 @@
 import { useStore } from "../store";
+import { world } from "../sim/instance";
 import { STATES, NODE_POS, TRANSITIONS, type Transition } from "../sim/fsmConfig";
+import type { FsmState } from "../sim/robot";
 
 const R = 27;
 
@@ -29,11 +31,14 @@ function Edge({ t }: { t: Transition }) {
   );
 }
 
-export default function FSMDiagram() {
-  const state = useStore((s) => s.readout.state);
+function RobotFsm({ index, state }: { index: number; state: FsmState }) {
+  const color = world.robots[index]?.color ?? "#2dd4bf";
   return (
-    <div className="panel">
-      <h2>Robot FSM</h2>
+    <div className="fsm-robot">
+      <div className="fsm-robot-head">
+        <i className="dot" style={{ background: color }} /> Robot #{index}
+        <b style={{ color }}>{state}</b>
+      </div>
       <svg className="fsm-svg" viewBox="0 0 360 210">
         <defs>
           <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -45,14 +50,28 @@ export default function FSMDiagram() {
         ))}
         {STATES.map((s) => {
           const p = NODE_POS[s];
+          const active = s === state;
           return (
-            <g key={s} className={"fsm-node" + (s === state ? " active" : "")}>
-              <circle cx={p.x} cy={p.y} r={R} />
+            <g key={s} className={"fsm-node" + (active ? " active" : "")}>
+              <circle cx={p.x} cy={p.y} r={R} style={active ? { fill: color, stroke: color } : undefined} />
               <text x={p.x} y={p.y}>{s}</text>
             </g>
           );
         })}
       </svg>
+    </div>
+  );
+}
+
+export default function FSMDiagram() {
+  const readouts = useStore((s) => s.readouts);
+  const robotCount = useStore((s) => s.robotCount);
+  return (
+    <div className="panel">
+      <h2>Robot FSM</h2>
+      {Array.from({ length: robotCount }, (_, i) => (
+        <RobotFsm key={i} index={i} state={readouts[i]?.state ?? "IDLE"} />
+      ))}
     </div>
   );
 }

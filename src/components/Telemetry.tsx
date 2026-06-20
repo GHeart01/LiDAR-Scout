@@ -1,4 +1,5 @@
 import { useStore } from "../store";
+import { world } from "../sim/instance";
 
 function Sparkline({ data, color, max, unit, label, value }: {
   data: number[];
@@ -9,7 +10,7 @@ function Sparkline({ data, color, max, unit, label, value }: {
   value: string;
 }) {
   const W = 300;
-  const H = 46;
+  const H = 40;
   const n = data.length;
   let path = "";
   if (n > 1) {
@@ -37,10 +38,11 @@ function Sparkline({ data, color, max, unit, label, value }: {
 
 export default function Telemetry() {
   const coverageHistory = useStore((s) => s.coverageHistory);
-  const frontHistory = useStore((s) => s.frontHistory);
+  const frontHistories = useStore((s) => s.frontHistories);
+  const readouts = useStore((s) => s.readouts);
   const coverage = useStore((s) => s.coverage);
   const range = useStore((s) => s.sensorRange);
-  const front = useStore((s) => s.readout.front);
+  const robotCount = useStore((s) => s.robotCount);
 
   return (
     <div className="panel">
@@ -50,17 +52,24 @@ export default function Telemetry() {
         color="#22d3ee"
         max={100}
         unit="%"
-        label="Map coverage"
+        label="Map coverage (shared)"
         value={(coverage * 100).toFixed(1)}
       />
-      <Sparkline
-        data={frontHistory}
-        color="#facc15"
-        max={range}
-        unit="m"
-        label="Front clearance"
-        value={front >= range ? "clear" : front.toFixed(1)}
-      />
+      {Array.from({ length: robotCount }, (_, i) => {
+        const color = world.robots[i]?.color ?? "#2dd4bf";
+        const front = readouts[i]?.front ?? 0;
+        return (
+          <Sparkline
+            key={i}
+            data={frontHistories[i] ?? []}
+            color={color}
+            max={range}
+            unit="m"
+            label={`#${i} front clearance`}
+            value={front >= range ? "clear" : front.toFixed(1)}
+          />
+        );
+      })}
     </div>
   );
 }

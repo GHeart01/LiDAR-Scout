@@ -126,9 +126,29 @@ html, body, #root {
   color: var(--accent);
 }
 #sidebar header p {
-  margin: 2px 0 16px;
+  margin: 2px 0 10px;
   font-size: 12px;
   color: var(--muted);
+}
+.repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  background: #1d2c49;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.repo-link:hover {
+  background: #243860;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .panel {
@@ -270,11 +290,43 @@ button.primary:hover { background: #34e0cb; }
 .fsm-node.active circle { fill: var(--accent); stroke: var(--accent-2); stroke-width: 2.4; }
 .fsm-node.active text { fill: #06241f; }
 
-/* ---------- Radar ---------- */
-#radar {
+/* ---------- Per-robot FSM ---------- */
+.fsm-robot { margin-bottom: 12px; }
+.fsm-robot:last-child { margin-bottom: 0; }
+.fsm-robot-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.fsm-robot-head b { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+/* ---------- Radar grid ---------- */
+.radar-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.radar-cell {
+  background: #0a1326;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+}
+.radar-cell:hover { border-color: var(--accent); }
+.radar-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.radar-canvas {
   width: 100%;
   height: auto;
   display: block;
-  background: #0a1326;
-  border-radius: 10px;
 }

@@ -5,11 +5,14 @@ function fmtDist(v: number, max = 30): string {
   return v >= max ? "clear" : v.toFixed(2) + " m";
 }
 
+const DEFAULT_READOUT = { state: "IDLE" as const, front: 0, nearest: 0, heading: 0, x: 0, z: 0 };
+
 export default function Hud() {
-  const r = useStore((s) => s.readout);
+  const readouts = useStore((s) => s.readouts);
   const coverage = useStore((s) => s.coverage);
   const fps = useStore((s) => s.fps);
   const selected = useStore((s) => s.selectedRobot);
+  const r = readouts[selected] ?? DEFAULT_READOUT;
   const robotColor = world.robots[selected]?.color ?? "#2dd4bf";
 
   return (

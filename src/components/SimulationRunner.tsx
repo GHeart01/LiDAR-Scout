@@ -31,20 +31,17 @@ export default function SimulationRunner() {
     acc.current += delta;
     if (acc.current >= 0.1) {
       acc.current = 0;
-      const r = world.robots[Math.min(s.selectedRobot, world.robots.length - 1)];
       const coverage = world.coverage();
-      if (r) {
-        const front = r.frontDistance(r.headingDeg(), 20);
-        s.setReadout({
-          state: r.state,
-          front,
-          nearest: r.nearest(),
-          heading: r.headingDeg(),
-          x: r.position.x,
-          z: r.position.z,
-        });
-        s.pushTelemetry(coverage * 100, front);
-      }
+      const readouts = world.robots.map((r) => ({
+        state: r.state,
+        front: r.frontDistance(r.headingDeg(), 20),
+        nearest: r.nearest(),
+        heading: r.headingDeg(),
+        x: r.position.x,
+        z: r.position.z,
+      }));
+      s.setReadouts(readouts);
+      s.pushTelemetry(coverage * 100, readouts.map((r) => r.front));
       s.setStats(coverage, fps.current);
     }
   });
