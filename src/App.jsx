@@ -3,7 +3,6 @@ import Scene from "./components/Scene.jsx";
 import Hud from "./components/Hud.jsx";
 import ViewToggle from "./components/ViewToggle.jsx";
 import Controls from "./components/Controls.jsx";
-import RendererPanel from "./components/RendererPanel.jsx";
 import FSMDiagram from "./components/FSMDiagram.jsx";
 import Radar from "./components/Radar.jsx";
 import RendererBoundary from "./components/RendererBoundary.jsx";
@@ -52,7 +51,6 @@ export default function App() {
           <p>Top-down sweeping-LiDAR robot simulator</p>
         </header>
         <Controls />
-        <RendererPanel />
         <FSMDiagram />
         <Radar />
       </aside>
