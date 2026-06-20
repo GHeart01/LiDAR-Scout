@@ -1,0 +1,204 @@
+:root {
+  --bg: #0b1120;
+  --panel: #111a2e;
+  --panel-2: #16233d;
+  --line: #233252;
+  --text: #e2e8f0;
+  --muted: #7c8db5;
+  --accent: #2dd4bf;
+  --accent-2: #facc15;
+  --danger: #f87171;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ---------- Viewport ---------- */
+#viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#hud {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(11, 17, 32, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(4px);
+  min-width: 190px;
+}
+
+.hud-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 2px 0;
+  font-size: 13px;
+}
+.hud-row span { color: var(--muted); letter-spacing: 0.08em; }
+.hud-row b { color: var(--accent); }
+#hud-state { color: var(--accent-2); }
+
+#legend {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(11, 17, 32, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+#legend .hint { font-style: italic; }
+.dot {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.dot.beam { background: var(--danger); }
+.dot.hit { background: var(--accent-2); }
+.dot.safe { background: transparent; border: 2px solid var(--accent); width: 8px; height: 8px; }
+
+/* ---------- Sidebar ---------- */
+#sidebar {
+  flex: 0 0 360px;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  padding: 18px;
+  overflow-y: auto;
+}
+
+#sidebar header h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+#sidebar header p {
+  margin: 2px 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.panel {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
+button {
+  flex: 1;
+  background: #1d2c49;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+button:hover { background: #243860; border-color: var(--accent); }
+button.primary { background: var(--accent); color: #06241f; border-color: var(--accent); font-weight: 600; }
+button.primary:hover { background: #34e0cb; }
+
+.slider {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 4px;
+}
+.slider output { float: right; color: var(--accent); font-variant-numeric: tabular-nums; }
+.slider input[type="range"] {
+  width: 100%;
+  margin-top: 6px;
+  accent-color: var(--accent);
+}
+
+/* ---------- FSM diagram ---------- */
+#fsm-diagram { width: 100%; }
+.fsm-svg { width: 100%; height: auto; display: block; }
+
+.fsm-edge path {
+  fill: none;
+  stroke: #3a4d73;
+  stroke-width: 1.6;
+}
+.fsm-edge-label {
+  fill: var(--muted);
+  font-size: 9px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--panel-2);
+  stroke-width: 3px;
+}
+.fsm-node circle {
+  fill: #1b2942;
+  stroke: #3a4d73;
+  stroke-width: 1.6;
+  transition: fill 0.2s, stroke 0.2s;
+}
+.fsm-node text {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+  transition: fill 0.2s;
+}
+.fsm-node.active circle {
+  fill: var(--accent);
+  stroke: var(--accent-2);
+  stroke-width: 2.4;
+}
+.fsm-node.active text { fill: #06241f; }
+
+/* ---------- Radar ---------- */
+#radar {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #0a1326;
+  border-radius: 10px;
+}

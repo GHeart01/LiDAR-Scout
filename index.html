@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LiDAR Scout — Sweeping LiDAR Simulator</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- 3D top-down viewport -->
+    <section id="viewport">
+      <canvas id="scene"></canvas>
+      <div id="hud">
+        <div class="hud-row"><span>STATE</span><b id="hud-state">IDLE</b></div>
+        <div class="hud-row"><span>FRONT</span><b id="hud-front">—</b></div>
+        <div class="hud-row"><span>NEAREST</span><b id="hud-near">—</b></div>
+        <div class="hud-row"><span>HEADING</span><b id="hud-head">—</b></div>
+        <div class="hud-row"><span>POS</span><b id="hud-pos">—</b></div>
+      </div>
+      <div id="legend">
+        <span><i class="dot beam"></i>active beam</span>
+        <span><i class="dot hit"></i>lidar hit</span>
+        <span><i class="dot safe"></i>safety ring</span>
+        <span class="hint">drag the robot or boxes to reposition</span>
+      </div>
+    </section>
+
+    <!-- Side panel -->
+    <aside id="sidebar">
+      <header>
+        <h1>LiDAR&nbsp;Scout</h1>
+        <p>Top-down sweeping-LiDAR robot simulator</p>
+      </header>
+
+      <div class="panel">
+        <h2>Controls</h2>
+        <div class="btn-row">
+          <button id="btn-run" class="primary">▶ Start</button>
+          <button id="btn-reset">↺ Reset</button>
+          <button id="btn-pause">⏸ Pause</button>
+        </div>
+        <div class="btn-row">
+          <button id="btn-add">＋ Obstacle</button>
+          <button id="btn-remove">－ Obstacle</button>
+        </div>
+
+        <label class="slider">Sim speed <output id="out-sim">1.0×</output>
+          <input id="sl-sim" type="range" min="0.1" max="3" step="0.1" value="1" />
+        </label>
+        <label class="slider">Drive speed <output id="out-speed">6</output>
+          <input id="sl-speed" type="range" min="1" max="14" step="0.5" value="6" />
+        </label>
+        <label class="slider">Sweep rate <output id="out-sweep">300°/s</output>
+          <input id="sl-sweep" type="range" min="60" max="720" step="20" value="300" />
+        </label>
+        <label class="slider">Safe distance <output id="out-safe">5.0</output>
+          <input id="sl-safe" type="range" min="2" max="12" step="0.5" value="5" />
+        </label>
+      </div>
+
+      <div class="panel">
+        <h2>Robot FSM</h2>
+        <div id="fsm-diagram"></div>
+      </div>
+
+      <div class="panel">
+        <h2>LiDAR scan</h2>
+        <canvas id="radar" width="260" height="260"></canvas>
+      </div>
+    </aside>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
