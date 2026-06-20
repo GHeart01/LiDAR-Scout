@@ -1,124 +1,112 @@
 # LiDAR Scout
 
-A **React + [React Three Fiber](https://docs.pmnd.rs/react-three-fiber)**
-top-down **sweeping-LiDAR robot simulator**. A robot drives autonomously around
-a walled arena, sweeps a 360° LiDAR to measure distances to obstacles, and
-navigates using a small finite state machine (FSM). Drag the robot and obstacles
-around in real time and watch the distance readings, polar radar, and FSM state
-update live.
+[![CI](https://github.com/GHeart01/LiDAR-Scout/actions/workflows/ci.yml/badge.svg)](https://github.com/GHeart01/LiDAR-Scout/actions/workflows/ci.yml)
+
+A **multi-robot autonomous LiDAR exploration simulator** built with
+**React Three Fiber + TypeScript**. Robots sweep a noisy 360° LiDAR, collaborate
+to build a shared occupancy map, and **autonomously explore** the arena using
+**frontier detection + A\* path planning** — all rendered in a cinematic 3D
+scene with live telemetry and a finite-state-machine view.
 
 ## Features
 
-- **3D scene** rendered with R3F — a tilted, orbitable perspective view by
-  default, with a one-click **top-down** mode (view toggle).
-- **Sweeping LiDAR** — one ray cast per degree as the beam rotates, with a
-  glowing active beam, a trailing **phosphor sweep wedge**, and a **fading**
-  hit-point cloud.
-- **Discovered map (mini-SLAM)** — the robot accumulates an occupancy grid as it
-  scans, building a persistent glowing point-cloud map and lifting a
-  **fog-of-war** veil over the area it has explored.
-- **Cinematic rendering** — bloom + vignette post-processing, a reflective
-  floor, contact shadows, and atmospheric fog.
-- **Autonomous robot** driven by an FSM: `IDLE → SCAN → DRIVE → AVOID`.
-- **Live SVG state diagram** that highlights the current state and labels every
-  transition.
-- **Polar radar plot** of the current scan, oriented to the robot's heading.
-- **Interactive** — orbit/zoom the camera, drag the robot or any obstacle,
-  add/remove obstacles, toggle the map; tune sim speed, drive speed, sweep rate,
-  and the safety distance.
-- **HUD** showing state, front clearance, nearest hit, heading, and position.
+- **Autonomous exploration** — robots pick the nearest unexplored *frontier*,
+  plan an **A\* path** through known-free space, and drive to it, re-planning as
+  the map grows. Exploration ends when no reachable frontier remains.
+- **Multiple robots (1–4)** sharing one occupancy grid (collaborative mapping)
+  with simple inter-robot collision avoidance.
+- **Realistic LiDAR sensor model** — configurable range, field of view, angular
+  resolution (beam count), Gaussian range noise, and dropout.
+- **Occupancy-grid SLAM-lite** — ray-traced free/occupied cells build a
+  persistent glowing map with a fog-of-war veil over unexplored floor.
+- **Live telemetry** — map-coverage and front-clearance sparklines, plus an FPS
+  / coverage HUD.
+- **Scenario presets** — Scatter / Maze / Warehouse / Room layouts.
+- **Per-robot FSM** (`IDLE → PLAN → NAV → AVOID → DONE`) shown as a live state
+  diagram for the selected robot.
+- **Cinematic rendering** — bloom + vignette, reflective floor, contact shadows,
+  atmospheric fog; tilted 3D (orbit/zoom) or top-down camera.
+- **Interactive** — click to select a robot, drag robots/obstacles, switch
+  scenarios, tune every sensor and motion parameter live.
+- **TypeScript throughout**, **unit-tested** core algorithms, and **CI**.
 
 ## Tech stack
 
-- [React 18](https://react.dev/) + [Vite](https://vitejs.dev/)
-- [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber) (Three.js renderer for React)
-- [@react-three/drei](https://github.com/pmndrs/drei) — OrbitControls, ContactShadows, MeshReflectorMaterial
-- [@react-three/postprocessing](https://github.com/pmndrs/react-postprocessing) — bloom + vignette
-- [three](https://threejs.org/)
-- [zustand](https://github.com/pmndrs/zustand) for app/UI state
+- [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite](https://vitejs.dev/)
+- [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber) + [drei](https://github.com/pmndrs/drei) + [postprocessing](https://github.com/pmndrs/react-postprocessing)
+- [three](https://threejs.org/), [zustand](https://github.com/pmndrs/zustand)
+- [Vitest](https://vitest.dev/) for unit tests, GitHub Actions for CI
 
 ## Getting started
 
 ```bash
 npm install
-npm run dev      # start the Vite dev server (http://localhost:5173)
-```
+npm run dev        # http://localhost:5173
 
-Other scripts:
-
-```bash
-npm run build    # production build into dist/
-npm run preview  # preview the production build
+npm run typecheck  # tsc --noEmit
+npm test           # vitest (algorithmic core)
+npm run build      # typecheck + production build
 ```
 
 ## Architecture
 
-The 3D scene is fully declarative React Three Fiber. A framework-agnostic
-`Simulation` holds the robot, LiDAR, and FSM state; R3F components sync their
-meshes to it each frame via `useFrame`, and UI panels read mirrored values from
-a zustand store.
+A framework-agnostic TypeScript simulation core drives everything; React Three
+Fiber components read it each frame, and DOM panels read mirrored state from a
+zustand store.
 
 ```
 src/
-├─ main.jsx                 React entry
-├─ App.jsx                  Layout: viewport (Canvas + HUD) + sidebar
-├─ store.js                 zustand store: params, obstacles, readouts
-├─ styles.css
-├─ sim/
-│  ├─ Simulation.js         Robot + LiDAR + FSM logic (no React)
-│  ├─ instance.js           Shared simulation singleton + raycast target registry
-│  ├─ constants.js          Arena size, camera view size
-│  └─ fsmConfig.js          State diagram nodes/transitions
-└─ components/
-   ├─ Scene.jsx             <Canvas>, camera rig, post-processing, assembles the scene
-   ├─ SimulationRunner.jsx  useFrame: steps the sim, mirrors readouts to store
-   ├─ Arena.jsx             Reflective floor, grid, walls (LiDAR targets)
-   ├─ Obstacles.jsx         Draggable obstacle boxes (LiDAR targets)
-   ├─ Robot.jsx             Robot mesh + safety ring; draggable
-   ├─ LidarVisuals.jsx      Fading hit cloud + phosphor sweep + active beam
-   ├─ DiscoveredMap.jsx     Persistent occupancy cloud + fog-of-war veil
-   ├─ Hud.jsx               Overlay readouts + legend
-   ├─ Controls.jsx          Buttons + sliders + map toggle
-   ├─ ViewToggle.jsx        3D / top-down camera switch
-   ├─ FSMDiagram.jsx        Live SVG state diagram
-   └─ Radar.jsx             2D polar scan plot
+├─ sim/                       Pure TypeScript simulation core (no React)
+│  ├─ world.ts                World: N robots, shared grid, raycast targets
+│  ├─ robot.ts                Per-robot pose, LiDAR buffers, FSM behaviour
+│  ├─ grid.ts                 Occupancy grid: ray tracing, frontiers, coverage
+│  ├─ planner.ts              A* path planning (octile heuristic, 8-connected)
+│  ├─ explorer.ts             Frontier selection (multi-robot claim-aware)
+│  ├─ sensor.ts               Sensor model: noise, dropout, FOV
+│  ├─ rng.ts                  Deterministic PRNG (reproducible sims/tests)
+│  ├─ *.test.ts               Vitest unit tests (grid / planner / explorer / sensor)
+│  └─ instance.ts             Shared world singleton + target registry
+├─ components/                React Three Fiber + DOM UI
+│  ├─ Scene.tsx               Canvas, camera rig, post-processing
+│  ├─ Robots.tsx              Robot meshes, per-robot LiDAR, planned-path lines
+│  ├─ DiscoveredMap.tsx       Shared occupancy cloud + fog-of-war
+│  ├─ Arena / Obstacles       Reflective floor, walls, draggable boxes
+│  ├─ SimulationRunner.tsx    useFrame: steps the world, mirrors telemetry
+│  ├─ Telemetry / Hud / Radar / FSMDiagram / Controls / ViewToggle
+│  └─ RendererBoundary.tsx    WebGPU→WebGL fallback boundary
+├─ store.ts                   zustand: params, obstacles, telemetry, readouts
+├─ scenarios.ts               Obstacle presets
+└─ renderer.ts                Renderer backend detection (see below)
 ```
 
-### FSM logic
+### How exploration works
 
-- **IDLE** — stationary; waiting for *Start*.
-- **SCAN** — holds position briefly so the LiDAR can refresh the forward sector,
-  then branches to `DRIVE` (path clear) or `AVOID` (blocked).
-- **DRIVE** — moves forward; re-scans periodically; switches to `AVOID` when the
-  front clearance drops below the safety distance.
-- **AVOID** — rotates in place toward the most open direction (max LiDAR
-  clearance) until the front is clear, then resumes driving.
+1. **SCAN (always on):** each robot's sweeping LiDAR ray-traces the shared grid,
+   marking cells free along each beam and occupied at hits (with sensor noise).
+2. **PLAN:** the robot finds the nearest **frontier** (free cell bordering the
+   unknown) not already claimed by another robot, then runs **A\*** to it.
+3. **NAV:** it follows the path waypoint-to-waypoint, re-planning periodically
+   and when the path is blocked.
+4. **AVOID:** if something enters its safety radius it rotates toward the most
+   open bearing, then re-plans.
+5. **DONE:** when no reachable frontier remains, the map is fully explored.
 
 ## Renderer (WebGPU / WebGL)
 
-The **Renderer** panel lets you pick **Auto**, **WebGPU**, or **WebGL** (the
-choice persists across reloads). The app probes `navigator.gpu` on load and the
-panel reports the active backend and status.
-
-Today the scene runs on the **classic WebGL renderer**, which is what the
-bloom/vignette post-processing, reflective floor, and contact shadows require.
-WebGPU support is scaffolded — capability detection, the selector, and a
-graceful WebGL fallback are all in place — but actually rendering with WebGPU is
-gated behind a feature flag (`WEBGPU_ENABLED` in `src/renderer.js`).
-
-Why the flag: three.js ships two mutually exclusive builds — `three` (with
-`WebGLRenderer`, needed by the GLSL effects) and `three/webgpu` (with
-`WebGPURenderer`, a separate core copy). They can't both drive this scene in one
-bundle, so enabling WebGPU means porting the effects to three's TSL/node
-pipeline first. When that's done, flipping the flag activates the WebGPU path;
-GLSL-only effects are automatically disabled on the WebGPU backend, and any
-WebGPU init failure falls back to WebGL via an error boundary.
+The scene runs on the **classic WebGL renderer**, required by the bloom,
+reflective floor, and contact-shadow effects. WebGPU is scaffolded (capability
+detection + a graceful WebGL fallback boundary) but gated behind `WEBGPU_ENABLED`
+in `src/renderer.ts`, because three.js ships two mutually exclusive builds
+(`three` with `WebGLRenderer` vs `three/webgpu` with `WebGPURenderer`). Enabling
+WebGPU means porting the effects to three's TSL/node pipeline first.
 
 ## Controls
 
-- **Start / Stop** — engage or disengage autonomy.
-- **Reset** — recenter the robot and regenerate obstacles.
-- **Pause** — freeze the simulation.
-- **＋ / － Obstacle** — add a random obstacle or remove the last one.
-- **Sliders** — sim speed, drive speed, LiDAR sweep rate, safety distance.
-- **Drag** — click and drag the robot or any obstacle to reposition it.
+- **Explore / Stop** — start or stop autonomy. **Reset** — clear the map and
+  re-place robots. **Pause** — freeze the sim.
+- **Scenario** — Scatter / Maze / Warehouse / Room. **Robots** — 1–4.
+- **Discovered map** — toggle the occupancy overlay.
+- **Sliders** — sim/drive speed, safety distance, and the full sensor model
+  (range, sweep rate, resolution, FOV, noise, dropout).
+- **Click** a robot to select it (drives the HUD, radar, and FSM diagram);
+  **drag** robots or obstacles; **drag empty space** to orbit, **scroll** to zoom.

@@ -1,6 +1,5 @@
-import { useStore } from "../store.js";
+import { useStore } from "../store";
 
-// Floating segmented control to switch between the 3D and top-down cameras.
 export default function ViewToggle() {
   const view = useStore((s) => s.view);
   const setView = useStore((s) => s.setView);

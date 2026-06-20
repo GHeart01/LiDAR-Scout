@@ -1,23 +1,22 @@
-import { useStore } from "../store.js";
-import { STATES, NODE_POS, TRANSITIONS } from "../sim/fsmConfig.js";
+import { useStore } from "../store";
+import { STATES, NODE_POS, TRANSITIONS, type Transition } from "../sim/fsmConfig";
 
-const R = 28;
+const R = 27;
 
-// Move a point from a node center toward (tx,ty) by the node radius.
-function trim(node, tx, ty) {
+function trim(node: { x: number; y: number }, tx: number, ty: number) {
   const dx = tx - node.x;
   const dy = ty - node.y;
   const l = Math.hypot(dx, dy) || 1;
   return { x: node.x + (dx / l) * R, y: node.y + (dy / l) * R };
 }
 
-function Edge({ t }) {
+function Edge({ t }: { t: Transition }) {
   const a = NODE_POS[t.from];
   const b = NODE_POS[t.to];
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const len = Math.hypot(dx, dy) || 1;
-  const curve = 24;
+  const curve = 22;
   const cx = (a.x + b.x) / 2 + (-dy / len) * curve;
   const cy = (a.y + b.y) / 2 + (dx / len) * curve;
   const s = trim(a, cx, cy);
@@ -31,26 +30,23 @@ function Edge({ t }) {
 }
 
 export default function FSMDiagram() {
-  const fsmState = useStore((s) => s.fsmState);
+  const state = useStore((s) => s.readout.state);
   return (
     <div className="panel">
       <h2>Robot FSM</h2>
       <svg className="fsm-svg" viewBox="0 0 360 210">
         <defs>
-          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
-            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M 0 0 L 10 5 L 0 10 z" fill="#3a4d73" />
           </marker>
         </defs>
-
         {TRANSITIONS.map((t, i) => (
           <Edge key={i} t={t} />
         ))}
-
         {STATES.map((s) => {
           const p = NODE_POS[s];
           return (
-            <g key={s} className={"fsm-node" + (s === fsmState ? " active" : "")}>
+            <g key={s} className={"fsm-node" + (s === state ? " active" : "")}>
               <circle cx={p.x} cy={p.y} r={R} />
               <text x={p.x} y={p.y}>{s}</text>
             </g>

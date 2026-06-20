@@ -1,22 +1,22 @@
 import { useEffect, useRef } from "react";
-import { useThree } from "@react-three/fiber";
+import { useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
-import { ARENA } from "../sim/constants.js";
-import { addTarget, removeTarget } from "../sim/instance.js";
-import { useStore } from "../store.js";
+import { ARENA } from "../sim/constants";
+import { addTarget, removeTarget } from "../sim/instance";
+import { useStore, type Obstacle as ObstacleType } from "../store";
 
 const GROUND = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const HIT = new THREE.Vector3();
 
-function clamp(v) {
+function clamp(v: number): number {
   const lim = ARENA - 1.6;
   return THREE.MathUtils.clamp(v, -lim, lim);
 }
 
-function Obstacle({ o }) {
-  const ref = useRef();
+function Obstacle({ o }: { o: ObstacleType }) {
+  const ref = useRef<THREE.Mesh>(null);
   const dragging = useRef(false);
-  const controls = useThree((s) => s.controls);
+  const controls = useThree((s) => s.controls) as unknown as { enabled: boolean } | undefined;
   const setObstaclePos = useStore((s) => s.setObstaclePos);
 
   useEffect(() => {
@@ -29,18 +29,19 @@ function Obstacle({ o }) {
     <mesh
       ref={ref}
       position={[o.x, 1, o.z]}
-      onPointerDown={(e) => {
+      castShadow
+      onPointerDown={(e: ThreeEvent<PointerEvent>) => {
         e.stopPropagation();
         dragging.current = true;
         if (controls) controls.enabled = false;
-        e.target.setPointerCapture(e.pointerId);
+        (e.target as Element).setPointerCapture?.(e.pointerId);
       }}
-      onPointerUp={(e) => {
+      onPointerUp={(e: ThreeEvent<PointerEvent>) => {
         dragging.current = false;
         if (controls) controls.enabled = true;
-        e.target.releasePointerCapture?.(e.pointerId);
+        (e.target as Element).releasePointerCapture?.(e.pointerId);
       }}
-      onPointerMove={(e) => {
+      onPointerMove={(e: ThreeEvent<PointerEvent>) => {
         if (!dragging.current) return;
         e.ray.intersectPlane(GROUND, HIT);
         setObstaclePos(o.id, clamp(HIT.x), clamp(HIT.z));
