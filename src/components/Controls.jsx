@@ -30,6 +30,8 @@ export default function Controls() {
   const addObstacle = useStore((s) => s.addObstacle);
   const removeObstacle = useStore((s) => s.removeObstacle);
   const resetObstacles = useStore((s) => s.resetObstacles);
+  const showMap = useStore((s) => s.showMap);
+  const setShowMap = useStore((s) => s.setShowMap);
 
   const toggleRun = () => {
     if (!running) {
@@ -71,6 +73,11 @@ export default function Controls() {
       <div className="btn-row">
         <button onClick={add}>＋ Obstacle</button>
         <button onClick={removeObstacle}>－ Obstacle</button>
+      </div>
+      <div className="btn-row">
+        <button className={showMap ? "primary" : ""} onClick={() => setShowMap(!showMap)}>
+          🗺 Discovered map: {showMap ? "On" : "Off"}
+        </button>
       </div>
 
       <Slider label="Sim speed" paramKey="simSpeed" min={0.1} max={3} step={0.1}

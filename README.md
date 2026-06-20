@@ -9,22 +9,31 @@ update live.
 
 ## Features
 
-- **Top-down 3D scene** rendered with R3F + an orthographic Three.js camera.
-- **Sweeping LiDAR** — one ray cast per degree as the beam rotates, building a
-  persistent polar distance map. The active beam and every hit point are drawn
-  in the scene.
+- **3D scene** rendered with R3F — a tilted, orbitable perspective view by
+  default, with a one-click **top-down** mode (view toggle).
+- **Sweeping LiDAR** — one ray cast per degree as the beam rotates, with a
+  glowing active beam, a trailing **phosphor sweep wedge**, and a **fading**
+  hit-point cloud.
+- **Discovered map (mini-SLAM)** — the robot accumulates an occupancy grid as it
+  scans, building a persistent glowing point-cloud map and lifting a
+  **fog-of-war** veil over the area it has explored.
+- **Cinematic rendering** — bloom + vignette post-processing, a reflective
+  floor, contact shadows, and atmospheric fog.
 - **Autonomous robot** driven by an FSM: `IDLE → SCAN → DRIVE → AVOID`.
 - **Live SVG state diagram** that highlights the current state and labels every
   transition.
 - **Polar radar plot** of the current scan, oriented to the robot's heading.
-- **Interactive** — drag the robot or any obstacle; add/remove obstacles; tune
-  sim speed, drive speed, sweep rate, and the safety distance.
+- **Interactive** — orbit/zoom the camera, drag the robot or any obstacle,
+  add/remove obstacles, toggle the map; tune sim speed, drive speed, sweep rate,
+  and the safety distance.
 - **HUD** showing state, front clearance, nearest hit, heading, and position.
 
 ## Tech stack
 
 - [React 18](https://react.dev/) + [Vite](https://vitejs.dev/)
 - [@react-three/fiber](https://docs.pmnd.rs/react-three-fiber) (Three.js renderer for React)
+- [@react-three/drei](https://github.com/pmndrs/drei) — OrbitControls, ContactShadows, MeshReflectorMaterial
+- [@react-three/postprocessing](https://github.com/pmndrs/react-postprocessing) — bloom + vignette
 - [three](https://threejs.org/)
 - [zustand](https://github.com/pmndrs/zustand) for app/UI state
 
@@ -61,14 +70,16 @@ src/
 │  ├─ constants.js          Arena size, camera view size
 │  └─ fsmConfig.js          State diagram nodes/transitions
 └─ components/
-   ├─ Scene.jsx             <Canvas>, ortho camera rig, assembles the scene
+   ├─ Scene.jsx             <Canvas>, camera rig, post-processing, assembles the scene
    ├─ SimulationRunner.jsx  useFrame: steps the sim, mirrors readouts to store
-   ├─ Arena.jsx             Floor, grid, walls (LiDAR targets)
+   ├─ Arena.jsx             Reflective floor, grid, walls (LiDAR targets)
    ├─ Obstacles.jsx         Draggable obstacle boxes (LiDAR targets)
    ├─ Robot.jsx             Robot mesh + safety ring; draggable
-   ├─ LidarVisuals.jsx      Hit-point cloud + active beam
+   ├─ LidarVisuals.jsx      Fading hit cloud + phosphor sweep + active beam
+   ├─ DiscoveredMap.jsx     Persistent occupancy cloud + fog-of-war veil
    ├─ Hud.jsx               Overlay readouts + legend
-   ├─ Controls.jsx          Buttons + sliders
+   ├─ Controls.jsx          Buttons + sliders + map toggle
+   ├─ ViewToggle.jsx        3D / top-down camera switch
    ├─ FSMDiagram.jsx        Live SVG state diagram
    └─ Radar.jsx             2D polar scan plot
 ```

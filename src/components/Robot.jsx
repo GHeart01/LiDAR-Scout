@@ -67,25 +67,36 @@ export default function Robot() {
         }}
       >
         {/* Chassis */}
-        <mesh position={[0, 0.35, 0]}>
+        <mesh position={[0, 0.35, 0]} castShadow>
           <cylinderGeometry args={[1.15, 1.15, 0.7, 28]} />
-          <meshStandardMaterial color="#2dd4bf" metalness={0.25} roughness={0.5} />
+          <meshStandardMaterial
+            color="#2dd4bf"
+            metalness={0.35}
+            roughness={0.4}
+            emissive="#0e8a7d"
+            emissiveIntensity={0.5}
+          />
         </mesh>
         {/* Heading indicator (points along local +X) */}
         <mesh position={[1.05, 0.45, 0]} rotation={[0, 0, -Math.PI / 2]}>
           <coneGeometry args={[0.5, 1.1, 18]} />
           <meshStandardMaterial color="#06241f" />
         </mesh>
-        {/* Spinning sensor mast */}
+        {/* Spinning sensor mast (glows under bloom) */}
         <mesh ref={mast} position={[0, 0.95, 0]}>
           <cylinderGeometry args={[0.28, 0.28, 0.5, 16]} />
-          <meshStandardMaterial color="#facc15" emissive="#5c4a00" />
+          <meshStandardMaterial
+            color="#facc15"
+            emissive="#facc15"
+            emissiveIntensity={2.2}
+            toneMapped={false}
+          />
         </mesh>
       </group>
 
       {/* Safety ring */}
       <lineLoop ref={ring} geometry={ringGeom}>
-        <lineBasicMaterial color="#2dd4bf" transparent opacity={0.35} />
+        <lineBasicMaterial color="#2dd4bf" transparent opacity={0.5} toneMapped={false} />
       </lineLoop>
     </>
   );

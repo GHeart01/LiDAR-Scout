@@ -47,7 +47,7 @@ function Obstacle({ o }) {
       }}
     >
       <boxGeometry args={[o.w, 2, o.d]} />
-      <meshStandardMaterial color="#64748b" roughness={0.8} />
+      <meshStandardMaterial color="#64748b" roughness={0.75} metalness={0.15} />
     </mesh>
   );
 }

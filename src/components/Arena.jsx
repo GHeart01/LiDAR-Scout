@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { MeshReflectorMaterial } from "@react-three/drei";
 import { ARENA } from "../sim/constants.js";
 import { addTarget, removeTarget } from "../sim/instance.js";
 
@@ -11,9 +12,9 @@ function Wall({ position, size }) {
     return () => removeTarget(mesh);
   }, []);
   return (
-    <mesh ref={ref} position={position}>
+    <mesh ref={ref} position={position} castShadow receiveShadow>
       <boxGeometry args={size} />
-      <meshStandardMaterial color="#33456b" />
+      <meshStandardMaterial color="#33456b" roughness={0.6} metalness={0.2} />
     </mesh>
   );
 }
@@ -23,14 +24,26 @@ export default function Arena() {
   const span = ARENA * 2 + t;
   return (
     <group>
-      {/* Floor */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+      {/* Reflective floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[ARENA * 2, ARENA * 2]} />
-        <meshStandardMaterial color="#0e1830" roughness={1} />
+        <MeshReflectorMaterial
+          resolution={1024}
+          blur={[300, 90]}
+          mixBlur={1}
+          mixStrength={18}
+          roughness={0.95}
+          depthScale={1}
+          minDepthThreshold={0.4}
+          maxDepthThreshold={1.2}
+          color="#0a1424"
+          metalness={0.55}
+          mirror={0.35}
+        />
       </mesh>
 
       {/* Grid */}
-      <gridHelper args={[ARENA * 2, ARENA, "#1d2c49", "#16233d"]} position={[0, 0.01, 0]} />
+      <gridHelper args={[ARENA * 2, ARENA, "#1d3a52", "#13243d"]} position={[0, 0.015, 0]} />
 
       {/* Walls */}
       <Wall position={[0, 1.1, -ARENA]} size={[span, 2.2, t]} />

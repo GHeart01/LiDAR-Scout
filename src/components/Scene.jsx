@@ -1,11 +1,14 @@
 import { useEffect } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, ContactShadows } from "@react-three/drei";
+import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
+import { ARENA } from "../sim/constants.js";
 import { useStore } from "../store.js";
 import Arena from "./Arena.jsx";
 import Obstacles from "./Obstacles.jsx";
 import Robot from "./Robot.jsx";
 import LidarVisuals from "./LidarVisuals.jsx";
+import DiscoveredMap from "./DiscoveredMap.jsx";
 import SimulationRunner from "./SimulationRunner.jsx";
 
 // Positions the orbit camera for the selected view.
@@ -38,15 +41,28 @@ export default function Scene() {
       gl={{ antialias: true }}
       dpr={[1, 2]}
     >
-      <color attach="background" args={["#0b1120"]} />
-      <hemisphereLight args={["#bfe9ff", "#10203a", 1.1]} />
+      <color attach="background" args={["#070d18"]} />
+      <fogExp2 attach="fog" args={["#070d18", 0.006]} />
+
+      <hemisphereLight args={["#bfe9ff", "#0a1424", 0.9]} />
       <directionalLight position={[20, 40, 10]} intensity={0.7} />
+      <pointLight position={[0, 18, 0]} intensity={0.4} color="#2dd4bf" distance={90} />
 
       <Arena />
+      <DiscoveredMap />
       <Obstacles />
       <Robot />
       <LidarVisuals />
       <SimulationRunner />
+
+      <ContactShadows
+        position={[0, 0.03, 0]}
+        scale={ARENA * 2.4}
+        blur={2.4}
+        far={6}
+        opacity={0.5}
+        color="#000000"
+      />
 
       <OrbitControls
         makeDefault
@@ -56,6 +72,11 @@ export default function Scene() {
         maxPolarAngle={Math.PI / 2 - 0.04}
       />
       <ViewController />
+
+      <EffectComposer disableNormalPass>
+        <Bloom intensity={0.85} luminanceThreshold={0.2} luminanceSmoothing={0.35} mipmapBlur />
+        <Vignette offset={0.25} darkness={0.85} eskil={false} />
+      </EffectComposer>
     </Canvas>
   );
 }

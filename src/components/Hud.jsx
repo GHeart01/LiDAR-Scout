@@ -27,7 +27,8 @@ export default function Hud() {
 
       <div id="legend">
         <span><i className="dot beam" />active beam</span>
-        <span><i className="dot hit" />lidar hit</span>
+        <span><i className="dot hit" />live scan</span>
+        <span><i className="dot map" />discovered map</span>
         <span><i className="dot safe" />safety ring</span>
         <span className="hint">drag robot/boxes to move · drag empty space to orbit · scroll to zoom</span>
       </div>

@@ -31,6 +31,20 @@ export class Simulation {
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = this.maxRange;
 
+    // Timing (drives the fading scan visuals).
+    this.time = 0;
+    this.hitTime = new Float32Array(360);
+
+    // Occupancy grid for the "discovered map" (mini-SLAM).
+    // occ: 0 = unknown, 1 = free (seen), 2 = occupied.
+    this.cell = 0.6;
+    this.gridN = Math.ceil((ARENA * 2) / this.cell);
+    this.occ = new Uint8Array(this.gridN * this.gridN);
+    this.revealed = new Uint8Array(this.gridN * this.gridN);
+    this.newOccupied = []; // queue of [x, z] world centers for the renderer
+    this.fogDirty = true;
+    this.mapEpoch = 0; // bumped on reset so the renderer can clear its buffers
+
     // FSM
     this.fsmState = "IDLE";
     this.fsmPrev = null;
@@ -60,23 +74,86 @@ export class Simulation {
     this._acc = 0;
     this.fsmState = "IDLE";
     this.fsmTimer = 0;
+    this.time = 0;
+    this.hitTime.fill(0);
+    this.occ.fill(0);
+    this.revealed.fill(0);
+    this.newOccupied.length = 0;
+    this.fogDirty = true;
+    this.mapEpoch++;
+  }
+
+  // ---- Occupancy grid ----------------------------------------------------
+  _cellIndex(x, z) {
+    const cx = Math.floor((x + ARENA) / this.cell);
+    const cz = Math.floor((z + ARENA) / this.cell);
+    if (cx < 0 || cz < 0 || cx >= this.gridN || cz >= this.gridN) return -1;
+    return cz * this.gridN + cx;
+  }
+
+  _reveal(idx) {
+    if (idx >= 0 && !this.revealed[idx]) {
+      this.revealed[idx] = 1;
+      this.fogDirty = true;
+    }
+  }
+
+  _markFree(idx) {
+    if (idx < 0) return;
+    if (this.occ[idx] === 0) this.occ[idx] = 1;
+    this._reveal(idx);
+  }
+
+  _markOccupied(x, z) {
+    const cx = Math.floor((x + ARENA) / this.cell);
+    const cz = Math.floor((z + ARENA) / this.cell);
+    if (cx < 0 || cz < 0 || cx >= this.gridN || cz >= this.gridN) return;
+    const idx = cz * this.gridN + cx;
+    this._reveal(idx);
+    if (this.occ[idx] !== 2) {
+      this.occ[idx] = 2;
+      this.newOccupied.push(-ARENA + (cx + 0.5) * this.cell, -ARENA + (cz + 0.5) * this.cell);
+    }
+  }
+
+  // March along a ray marking cells free up to the hit, occupied at the hit.
+  _traceRay(ox, oz, ax, az, endDist, hitValid, hx, hz) {
+    const step = this.cell * 0.5;
+    const n = Math.floor(endDist / step);
+    let last = -1;
+    for (let s = 1; s <= n; s++) {
+      const dd = s * step;
+      const idx = this._cellIndex(ox + ax * dd, oz + az * dd);
+      if (idx === -1) break;
+      if (idx !== last) {
+        this._markFree(idx);
+        last = idx;
+      }
+    }
+    if (hitValid) this._markOccupied(hx, hz);
   }
 
   // ---- LiDAR -------------------------------------------------------------
   _castDegree(deg, targets) {
     const a = deg * DEG;
-    this._dir.set(Math.cos(a), 0, Math.sin(a));
+    const ax = Math.cos(a);
+    const az = Math.sin(a);
+    this._dir.set(ax, 0, az);
     this.raycaster.set(this._origin, this._dir);
     this.raycaster.far = this.maxRange;
     const hits = this.raycaster.intersectObjects(targets, false);
+    this.hitTime[deg] = this.time;
     if (hits.length) {
+      const p = hits[0].point;
       this.distances[deg] = hits[0].distance;
       this.valid[deg] = true;
-      this.hitX[deg] = hits[0].point.x;
-      this.hitZ[deg] = hits[0].point.z;
+      this.hitX[deg] = p.x;
+      this.hitZ[deg] = p.z;
+      this._traceRay(this._origin.x, this._origin.z, ax, az, hits[0].distance, true, p.x, p.z);
     } else {
       this.distances[deg] = this.maxRange;
       this.valid[deg] = false;
+      this._traceRay(this._origin.x, this._origin.z, ax, az, this.maxRange, false, 0, 0);
     }
   }
 
@@ -144,6 +221,8 @@ export class Simulation {
 
   // ---- Per-frame step ----------------------------------------------------
   step(dt, targets, params) {
+    this.time += dt;
+
     // Apply live parameters.
     this.robot.speed = params.driveSpeed;
     this.sweepSpeed = params.sweepRate * DEG;

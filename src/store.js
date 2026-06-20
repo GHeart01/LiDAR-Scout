@@ -21,6 +21,9 @@ export const useStore = create((set) => ({
   // Camera view: 'iso' (tilted 3D) or 'top' (top-down)
   view: "iso",
 
+  // Discovered-map (mini-SLAM) overlay
+  showMap: true,
+
   // Tunable parameters
   simSpeed: 1,
   driveSpeed: 6,
@@ -36,6 +39,7 @@ export const useStore = create((set) => ({
 
   setParam: (key, value) => set({ [key]: value }),
   setView: (view) => set({ view }),
+  setShowMap: (showMap) => set({ showMap }),
   setPaused: (paused) => set({ paused }),
   setRunning: (running) => set({ running }),
   setFsmState: (fsmState) => set({ fsmState }),
