@@ -3,6 +3,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, ContactShadows } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing";
 import { ARENA } from "../sim/constants.js";
+import { createWebGPURenderer } from "../renderer.js";
 import { useStore } from "../store.js";
 import Arena from "./Arena.jsx";
 import Obstacles from "./Obstacles.jsx";
@@ -34,11 +35,16 @@ function ViewController() {
   return null;
 }
 
-export default function Scene() {
+export default function Scene({ backend = "webgl" }) {
+  // The GLSL-based effects (bloom, reflective floor, contact shadows) only run
+  // on the classic WebGL renderer. They're gated off for the WebGPU backend.
+  const effects = backend === "webgl";
+  const gl = backend === "webgpu" ? createWebGPURenderer : { antialias: true };
+
   return (
     <Canvas
+      gl={gl}
       camera={{ position: [34, 30, 34], fov: 45, near: 0.1, far: 1000 }}
-      gl={{ antialias: true }}
       dpr={[1, 2]}
     >
       <color attach="background" args={["#070d18"]} />
@@ -48,21 +54,23 @@ export default function Scene() {
       <directionalLight position={[20, 40, 10]} intensity={0.7} />
       <pointLight position={[0, 18, 0]} intensity={0.4} color="#2dd4bf" distance={90} />
 
-      <Arena />
+      <Arena reflective={effects} />
       <DiscoveredMap />
       <Obstacles />
       <Robot />
       <LidarVisuals />
       <SimulationRunner />
 
-      <ContactShadows
-        position={[0, 0.03, 0]}
-        scale={ARENA * 2.4}
-        blur={2.4}
-        far={6}
-        opacity={0.5}
-        color="#000000"
-      />
+      {effects && (
+        <ContactShadows
+          position={[0, 0.03, 0]}
+          scale={ARENA * 2.4}
+          blur={2.4}
+          far={6}
+          opacity={0.5}
+          color="#000000"
+        />
+      )}
 
       <OrbitControls
         makeDefault
@@ -73,10 +81,12 @@ export default function Scene() {
       />
       <ViewController />
 
-      <EffectComposer disableNormalPass>
-        <Bloom intensity={0.85} luminanceThreshold={0.2} luminanceSmoothing={0.35} mipmapBlur />
-        <Vignette offset={0.25} darkness={0.85} eskil={false} />
-      </EffectComposer>
+      {effects && (
+        <EffectComposer disableNormalPass>
+          <Bloom intensity={0.85} luminanceThreshold={0.2} luminanceSmoothing={0.35} mipmapBlur />
+          <Vignette offset={0.25} darkness={0.85} eskil={false} />
+        </EffectComposer>
+      )}
     </Canvas>
   );
 }

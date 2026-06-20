@@ -94,6 +94,26 @@ src/
 - **AVOID** — rotates in place toward the most open direction (max LiDAR
   clearance) until the front is clear, then resumes driving.
 
+## Renderer (WebGPU / WebGL)
+
+The **Renderer** panel lets you pick **Auto**, **WebGPU**, or **WebGL** (the
+choice persists across reloads). The app probes `navigator.gpu` on load and the
+panel reports the active backend and status.
+
+Today the scene runs on the **classic WebGL renderer**, which is what the
+bloom/vignette post-processing, reflective floor, and contact shadows require.
+WebGPU support is scaffolded — capability detection, the selector, and a
+graceful WebGL fallback are all in place — but actually rendering with WebGPU is
+gated behind a feature flag (`WEBGPU_ENABLED` in `src/renderer.js`).
+
+Why the flag: three.js ships two mutually exclusive builds — `three` (with
+`WebGLRenderer`, needed by the GLSL effects) and `three/webgpu` (with
+`WebGPURenderer`, a separate core copy). They can't both drive this scene in one
+bundle, so enabling WebGPU means porting the effects to three's TSL/node
+pipeline first. When that's done, flipping the flag activates the WebGPU path;
+GLSL-only effects are automatically disabled on the WebGPU backend, and any
+WebGPU init failure falls back to WebGL via an error boundary.
+
 ## Controls
 
 - **Start / Stop** — engage or disengage autonomy.

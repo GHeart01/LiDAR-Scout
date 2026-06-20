@@ -19,27 +19,31 @@ function Wall({ position, size }) {
   );
 }
 
-export default function Arena() {
+export default function Arena({ reflective = true }) {
   const t = 1;
   const span = ARENA * 2 + t;
   return (
     <group>
-      {/* Reflective floor */}
+      {/* Floor — reflective on WebGL, glossy standard material otherwise */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
         <planeGeometry args={[ARENA * 2, ARENA * 2]} />
-        <MeshReflectorMaterial
-          resolution={1024}
-          blur={[300, 90]}
-          mixBlur={1}
-          mixStrength={18}
-          roughness={0.95}
-          depthScale={1}
-          minDepthThreshold={0.4}
-          maxDepthThreshold={1.2}
-          color="#0a1424"
-          metalness={0.55}
-          mirror={0.35}
-        />
+        {reflective ? (
+          <MeshReflectorMaterial
+            resolution={1024}
+            blur={[300, 90]}
+            mixBlur={1}
+            mixStrength={18}
+            roughness={0.95}
+            depthScale={1}
+            minDepthThreshold={0.4}
+            maxDepthThreshold={1.2}
+            color="#0a1424"
+            metalness={0.55}
+            mirror={0.35}
+          />
+        ) : (
+          <meshStandardMaterial color="#0a1424" metalness={0.6} roughness={0.4} />
+        )}
       </mesh>
 
       {/* Grid */}

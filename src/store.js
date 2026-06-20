@@ -2,6 +2,17 @@ import { create } from "zustand";
 
 let nextId = 1;
 
+const RMODE_KEY = "lidar-renderer-mode";
+function initialRendererMode() {
+  try {
+    const v = localStorage.getItem(RMODE_KEY);
+    if (v === "auto" || v === "webgpu" || v === "webgl") return v;
+  } catch {
+    /* ignore */
+  }
+  return "auto";
+}
+
 function seedObstacles() {
   const defs = [
     { x: -8, z: -6, w: 4, d: 4 },
@@ -24,6 +35,11 @@ export const useStore = create((set) => ({
   // Discovered-map (mini-SLAM) overlay
   showMap: true,
 
+  // Renderer selection
+  rendererMode: initialRendererMode(), // 'auto' | 'webgpu' | 'webgl'
+  webgpuAvailable: null, // null until detection completes
+  activeBackend: "webgl", // backend actually driving the canvas
+
   // Tunable parameters
   simSpeed: 1,
   driveSpeed: 6,
@@ -40,6 +56,16 @@ export const useStore = create((set) => ({
   setParam: (key, value) => set({ [key]: value }),
   setView: (view) => set({ view }),
   setShowMap: (showMap) => set({ showMap }),
+  setRendererMode: (rendererMode) => {
+    try {
+      localStorage.setItem(RMODE_KEY, rendererMode);
+    } catch {
+      /* ignore */
+    }
+    set({ rendererMode });
+  },
+  setWebgpuAvailable: (webgpuAvailable) => set({ webgpuAvailable }),
+  setActiveBackend: (activeBackend) => set({ activeBackend }),
   setPaused: (paused) => set({ paused }),
   setRunning: (running) => set({ running }),
   setFsmState: (fsmState) => set({ fsmState }),
