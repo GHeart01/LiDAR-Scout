@@ -60,10 +60,11 @@ function RobotRadar({ index }: { index: number }) {
   }, [index]);
 
   const color = world.robots[index]?.color ?? "#2dd4bf";
+  const name = world.robots[index]?.name ?? `#${index}`;
   return (
     <div className="radar-cell" onClick={() => setSelectedRobot(index)}>
       <div className="radar-label">
-        <i className="dot" style={{ background: color }} /> #{index}
+        <i className="dot" style={{ background: color }} /> {name}
       </div>
       <canvas ref={canvasRef} width={120} height={120} className="radar-canvas" />
     </div>

@@ -12,7 +12,7 @@ interface ModelProps {
 
 const moving = (index: number) => {
   const s = world.robots[index]?.state;
-  return s === "NAV" || s === "AVOID";
+  return s === "CHASE" || s === "AVOID";
 };
 
 // ---- Rover: cylinder chassis + heading cone + spinning sensor mast ---------

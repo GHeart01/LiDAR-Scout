@@ -33,10 +33,11 @@ function Edge({ t }: { t: Transition }) {
 
 function RobotFsm({ index, state }: { index: number; state: FsmState }) {
   const color = world.robots[index]?.color ?? "#2dd4bf";
+  const name = world.robots[index]?.name ?? `#${index}`;
   return (
     <div className="fsm-robot">
       <div className="fsm-robot-head">
-        <i className="dot" style={{ background: color }} /> Robot #{index}
+        <i className="dot" style={{ background: color }} /> {name}
         <b style={{ color }}>{state}</b>
       </div>
       <svg className="fsm-svg" viewBox="0 0 360 210">

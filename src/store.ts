@@ -74,6 +74,7 @@ interface StoreState {
   readouts: Readout[];
   coverage: number;
   fps: number;
+  catches: number;
   coverageHistory: number[];
   frontHistories: number[][];
 
@@ -97,6 +98,7 @@ interface StoreState {
   loadScenario: (s: ScenarioName) => void;
   setReadouts: (r: Readout[]) => void;
   setStats: (coverage: number, fps: number) => void;
+  setCatches: (n: number) => void;
   pushTelemetry: (coveragePct: number, fronts: number[]) => void;
   resetTelemetry: () => void;
   setRendererMode: (m: RendererMode) => void;
@@ -120,15 +122,16 @@ export const useStore = create<StoreState>((set) => ({
   noiseStd: 0.05,
   dropout: 0.02,
 
-  robotCount: 2,
+  robotCount: 4,
   selectedRobot: 0,
-  vehicle: "rover",
+  vehicle: "drone",
   scenario: "Scatter",
   obstacles: obstaclesFrom("Scatter"),
 
   readouts: [],
   coverage: 0,
   fps: 0,
+  catches: 0,
   coverageHistory: [],
   frontHistories: [],
 
@@ -154,6 +157,7 @@ export const useStore = create<StoreState>((set) => ({
 
   setReadouts: (readouts) => set({ readouts }),
   setStats: (coverage, fps) => set({ coverage, fps }),
+  setCatches: (catches) => set({ catches }),
   pushTelemetry: (coveragePct, fronts) =>
     set((s) => ({
       coverageHistory: [...s.coverageHistory.slice(-(HISTORY - 1)), coveragePct],

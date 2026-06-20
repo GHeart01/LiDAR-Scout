@@ -43,6 +43,7 @@ export default function SimulationRunner() {
       s.setReadouts(readouts);
       s.pushTelemetry(coverage * 100, readouts.map((r) => r.front));
       s.setStats(coverage, fps.current);
+      s.setCatches(world.catches);
     }
   });
 

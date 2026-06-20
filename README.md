@@ -2,17 +2,22 @@
 
 [![CI](https://github.com/GHeart01/LiDAR-Scout/actions/workflows/ci.yml/badge.svg)](https://github.com/GHeart01/LiDAR-Scout/actions/workflows/ci.yml)
 
-A **multi-robot autonomous LiDAR exploration simulator** built with
-**React Three Fiber + TypeScript**. Robots sweep a noisy 360° LiDAR, collaborate
-to build a shared occupancy map, and **autonomously explore** the arena using
-**frontier detection + A\* path planning** — all rendered in a cinematic 3D
-scene with live telemetry and a finite-state-machine view.
+A **multi-robot LiDAR pursuit simulator** built with **React Three Fiber +
+TypeScript**. Four Pac-Man-coloured robots sweep a noisy 360° LiDAR, build a
+shared occupancy map, and **chase a roaming yellow "prey" light** using **A\*
+path planning** — all rendered in a cinematic 3D scene with per-robot telemetry
+and finite-state-machine views.
 
 ## Features
 
-- **Autonomous exploration** — robots pick the nearest unexplored *frontier*,
-  plan an **A\* path** through known-free space, and drive to it, re-planning as
-  the map grows. Exploration ends when no reachable frontier remains.
+- **Autonomous pursuit** — four ghost-coloured robots (**Red, Pink, Cyan,
+  Orange**) chase a glowing yellow light that wanders the arena, dodges
+  obstacles, and flees its pursuers. Each colour targets differently
+  (Pac-Man-style): **Red is the smartest**, predicting the prey's path and
+  re-planning fastest; Pink ambushes ahead; Cyan chases directly; Orange
+  scatters when close. They never stop — catching the prey just respawns it.
+- **A\* path planning** with obstacle inflation (robot-radius clearance) so
+  robots route around walls/objects instead of clipping them.
 - **Multiple robots (1–4)** sharing one occupancy grid (collaborative mapping)
   with simple inter-robot collision avoidance.
 - **Selectable vehicles** — Rover, Drone (hovering quad-rotor), Car (rolling
@@ -25,8 +30,8 @@ scene with live telemetry and a finite-state-machine view.
 - **Live telemetry** — map-coverage and front-clearance sparklines, plus an FPS
   / coverage HUD.
 - **Scenario presets** — Scatter / Maze / Warehouse / Room layouts.
-- **Per-robot FSM** (`IDLE → PLAN → NAV → AVOID → DONE`) shown as a live state
-  diagram for the selected robot.
+- **Per-robot panels** — a live FSM diagram (`IDLE → CHASE → AVOID`), LiDAR scan
+  radar, and front-clearance telemetry for **every** robot.
 - **Cinematic rendering** — bloom + vignette, reflective floor, contact shadows,
   atmospheric fog; tilted 3D (orbit/zoom) or top-down camera.
 - **Interactive** — click to select a robot, drag robots/obstacles, switch
@@ -82,17 +87,16 @@ src/
 └─ renderer.ts                Renderer backend detection (see below)
 ```
 
-### How exploration works
+### How the chase works
 
 1. **SCAN (always on):** each robot's sweeping LiDAR ray-traces the shared grid,
    marking cells free along each beam and occupied at hits (with sensor noise).
-2. **PLAN:** the robot finds the nearest **frontier** (free cell bordering the
-   unknown) not already claimed by another robot, then runs **A\*** to it.
-3. **NAV:** it follows the path waypoint-to-waypoint, re-planning periodically
-   and when the path is blocked.
-4. **AVOID:** if something enters its safety radius it rotates toward the most
-   open bearing, then re-plans.
-5. **DONE:** when no reachable frontier remains, the map is fully explored.
+2. **CHASE:** the robot computes a goal from the prey (its colour's targeting
+   rule), runs **A\*** (with robot-radius obstacle inflation) toward it, and
+   follows the path — re-planning continuously as the prey moves.
+3. **AVOID:** if something enters its safety radius it rotates toward the most
+   open bearing, then resumes the chase.
+4. The robots never finish; catching the prey simply respawns it elsewhere.
 
 ## Renderer (WebGPU / WebGL)
 

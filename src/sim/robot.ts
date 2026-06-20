@@ -1,27 +1,25 @@
 import * as THREE from "three";
-import { DEG } from "./constants";
+import { DEG, ARENA } from "./constants";
 import { Cell } from "./grid";
 import { aStar } from "./planner";
-import { nearestReachableFrontier } from "./explorer";
 import { inFov, noisyRange, dropped } from "./sensor";
 import type { World, StepParams } from "./world";
 
-export type FsmState = "IDLE" | "PLAN" | "NAV" | "AVOID" | "DONE";
+// Pursuit FSM — the robots never "finish"; they chase the prey forever.
+export type FsmState = "IDLE" | "CHASE" | "AVOID";
 
-const REPLAN_INTERVAL = 3.0; // re-plan against the updated map this often
 const SENSOR_Y = 0.5;
 const INFLATE = 2; // grid cells of obstacle clearance (~robot radius)
-const MAP_START = 0.03; // coverage below which we're still doing the first scan
 
 function angNorm(a: number): number {
   return Math.atan2(Math.sin(a), Math.cos(a));
 }
 
-// One autonomous robot: owns its pose, FSM, and LiDAR buffers; writes into the
-// world's shared occupancy grid as it senses.
+// One chasing robot: pose, LiDAR buffers, and a plan-and-pursue controller.
 export class Robot {
   readonly id: number;
   readonly color: string;
+  readonly name: string;
 
   position = new THREE.Vector3();
   heading = 0;
@@ -41,15 +39,26 @@ export class Robot {
   timer = 0;
   path: Cell[] | null = null;
   pathIndex = 0;
-  targetFrontier = -1;
+
+  chaseTarget = { x: 0, z: 0 };
+  private replanAcc = 0;
+  private chaseReplan: number; // how often this robot re-plans (s)
+  private scatterX: number;
+  private scatterZ: number;
 
   private origin = new THREE.Vector3();
   private dir = new THREE.Vector3();
 
-  constructor(id: number, color: string) {
+  constructor(id: number, color: string, name: string) {
     this.id = id;
     this.color = color;
+    this.name = name;
     this.distances.fill(this.maxRange);
+    // The red bot is the smartest: it re-plans fastest (and predicts — below).
+    this.chaseReplan = id === 0 ? 0.35 : id === 3 ? 1.0 : 0.8;
+    const c = ARENA - 3;
+    const corners: [number, number][] = [[-c, -c], [c, -c], [-c, c], [c, c]];
+    [this.scatterX, this.scatterZ] = corners[id % 4];
   }
 
   headingDeg(): number {
@@ -63,7 +72,8 @@ export class Robot {
     this.timer = 0;
     this.path = null;
     this.pathIndex = 0;
-    this.targetFrontier = -1;
+    this.replanAcc = 0;
+    this.chaseTarget = { x, z };
     this.valid.fill(0);
     this.distances.fill(this.maxRange);
   }
@@ -106,10 +116,8 @@ export class Robot {
   }
 
   private sense(dt: number, world: World, params: StepParams): void {
-    // The robot's own cell is always free/observed.
     const oc = world.grid.worldToCell(this.position.x, this.position.z);
     world.grid.setFree(oc.cx, oc.cz);
-
     this.maxRange = params.sensor.range;
     const k = Math.max(1, Math.round(360 / params.sensor.beams));
     this.acc += params.sweepRate * dt;
@@ -123,7 +131,7 @@ export class Robot {
   }
 
   // ---- Queries -----------------------------------------------------------
-  frontDistance(headingDeg: number, half = 20): number {
+  frontDistance(headingDeg: number, half = 18): number {
     const h = Math.round(headingDeg);
     let min = this.maxRange;
     for (let o = -half; o <= half; o++) {
@@ -160,7 +168,6 @@ export class Robot {
     return best;
   }
 
-  // Distance to the nearest other robot that is roughly ahead (collision sense).
   private robotAhead(world: World): number {
     let m = Infinity;
     for (const o of world.robots) {
@@ -182,92 +189,119 @@ export class Robot {
     this.heading += Math.abs(diff) <= step ? diff : Math.sign(diff) * step;
   }
 
+  private steerMove(dt: number, desired: number): void {
+    this.turnToward(desired, dt);
+    if (Math.abs(angNorm(desired - this.heading)) < 0.7) {
+      this.position.x += Math.cos(this.heading) * this.speed * dt;
+      this.position.z += Math.sin(this.heading) * this.speed * dt;
+    }
+  }
+
   private clamp(world: World): void {
     const lim = world.grid.arena - 1.6;
     this.position.x = THREE.MathUtils.clamp(this.position.x, -lim, lim);
     this.position.z = THREE.MathUtils.clamp(this.position.z, -lim, lim);
   }
 
-  // ---- Planning / behaviour ---------------------------------------------
-  // Spin slowly in place so a (possibly narrow-FOV) sensor sweeps the area.
-  private idleScan(dt: number): void {
-    this.heading += this.turnRate * dt * 0.4;
+  // ---- Pursuit -----------------------------------------------------------
+  // Each colour targets the prey differently (Pac-Man-style personalities).
+  private chaseGoal(world: World): { x: number; z: number } {
+    const p = world.prey;
+    let tx = p.position.x;
+    let tz = p.position.z;
+    if (this.id === 0) {
+      // Red: smartest — predicts where the prey is heading.
+      tx += p.velocity.x * 0.9;
+      tz += p.velocity.z * 0.9;
+    } else if (this.id === 1) {
+      // Pink: ambushes ahead of the prey.
+      tx += Math.cos(p.heading) * 4;
+      tz += Math.sin(p.heading) * 4;
+    } else if (this.id === 3) {
+      // Orange: scatters to its corner when close, else chases directly.
+      const d = Math.hypot(p.position.x - this.position.x, p.position.z - this.position.z);
+      if (d < 7) {
+        tx = this.scatterX;
+        tz = this.scatterZ;
+      }
+    }
+    const lim = world.grid.arena - 1.4;
+    return {
+      x: THREE.MathUtils.clamp(tx, -lim, lim),
+      z: THREE.MathUtils.clamp(tz, -lim, lim),
+    };
   }
 
-  private plan(dt: number, world: World, claimed: Set<number>): void {
-    const cell = world.grid.worldToCell(this.position.x, this.position.z);
-    const target = nearestReachableFrontier(world.grid, cell, claimed, INFLATE);
-
-    if (!target) {
-      // Nothing reachable: either still mapping (keep scanning) or finished.
-      if (world.grid.coverage() < MAP_START) this.idleScan(dt);
-      else this.enter("DONE");
-      return;
-    }
-
-    const path = aStar(world.grid, cell, target.cell, { inflate: INFLATE });
-    if (!path) {
-      if (world.grid.coverage() < MAP_START) this.idleScan(dt);
-      return; // stay in PLAN, try again next frame
-    }
-    this.targetFrontier = target.index;
+  private planToTarget(world: World): void {
+    const target = this.chaseGoal(world);
+    this.chaseTarget = target;
+    const start = world.grid.worldToCell(this.position.x, this.position.z);
+    const goal = world.grid.worldToCell(target.x, target.z);
+    let path = aStar(world.grid, start, goal, { inflate: INFLATE, allowUnknown: true });
+    if (!path) path = aStar(world.grid, start, goal, { allowUnknown: true });
     this.path = path;
-    this.pathIndex = Math.min(1, path.length - 1);
-    this.enter("NAV");
+    this.pathIndex = path ? Math.min(1, path.length - 1) : 0;
   }
 
-  private follow(dt: number, world: World): void {
-    if (!this.path) {
-      this.enter("PLAN");
-      return;
+  private drive(dt: number, world: World): void {
+    if (this.path && this.pathIndex < this.path.length) {
+      const wp = this.path[this.pathIndex];
+      if (world.grid.get(wp.cx, wp.cz) === 2) {
+        this.path = null;
+      } else {
+        const c = world.grid.cellCenter(wp.cx, wp.cz);
+        const dx = c.x - this.position.x;
+        const dz = c.z - this.position.z;
+        if (Math.hypot(dx, dz) < world.grid.cell * 0.7) {
+          this.pathIndex++;
+          if (this.pathIndex >= this.path.length) this.path = null;
+        } else {
+          this.steerMove(dt, Math.atan2(dz, dx));
+          return;
+        }
+      }
     }
-    const wp = this.path[this.pathIndex];
-    if (world.grid.get(wp.cx, wp.cz) === 2) {
-      this.enter("PLAN"); // path is now blocked
-      return;
-    }
-    const c = world.grid.cellCenter(wp.cx, wp.cz);
-    const dx = c.x - this.position.x;
-    const dz = c.z - this.position.z;
-    if (Math.hypot(dx, dz) < world.grid.cell * 0.7) {
-      this.pathIndex++;
-      if (this.pathIndex >= this.path.length) this.enter("PLAN");
-      return;
-    }
-    const desired = Math.atan2(dz, dx);
-    this.turnToward(desired, dt);
-    if (Math.abs(angNorm(desired - this.heading)) < 0.6) {
-      this.position.x += Math.cos(this.heading) * this.speed * dt;
-      this.position.z += Math.sin(this.heading) * this.speed * dt;
-    }
+    // Greedy fallback straight toward the target.
+    const dx = this.chaseTarget.x - this.position.x;
+    const dz = this.chaseTarget.z - this.position.z;
+    if (Math.hypot(dx, dz) > 0.1) this.steerMove(dt, Math.atan2(dz, dx));
   }
 
-  update(dt: number, world: World, params: StepParams, claimed: Set<number>): void {
+  beginChase(): void {
+    this.path = null;
+    this.replanAcc = Infinity; // force an immediate plan
+    this.enter("CHASE");
+  }
+
+  update(dt: number, world: World, params: StepParams): void {
     this.speed = params.driveSpeed * world.speedScale;
     this.sense(dt, world, params);
     this.timer += dt;
 
     const hd = this.headingDeg();
-    const front = Math.min(this.frontDistance(hd, 20), this.robotAhead(world));
+    const front = Math.min(this.frontDistance(hd, 18), this.robotAhead(world));
 
     switch (this.state) {
       case "IDLE":
         break;
-      case "PLAN":
-        this.plan(dt, world, claimed);
-        break;
-      case "NAV":
-        if (front < params.safeDist) this.enter("AVOID");
-        else if (this.timer > REPLAN_INTERVAL) this.enter("PLAN");
-        else this.follow(dt, world);
+      case "CHASE":
+        if (front < params.safeDist) {
+          this.enter("AVOID");
+          break;
+        }
+        this.replanAcc += dt;
+        if (!this.path || this.replanAcc > this.chaseReplan) {
+          this.replanAcc = 0;
+          this.planToTarget(world);
+        }
+        this.drive(dt, world);
         break;
       case "AVOID":
         this.turnToward(this.bestDirectionDeg(hd) * DEG, dt);
-        if (this.timer > 0.6 && front > params.safeDist) this.enter("PLAN");
-        break;
-      case "DONE":
-        // Re-evaluate periodically: another robot may have opened up new area.
-        if (this.timer > 3) this.enter("PLAN");
+        if (this.timer > 0.4 && front > params.safeDist) {
+          this.path = null;
+          this.enter("CHASE");
+        }
         break;
     }
     this.clamp(world);

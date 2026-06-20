@@ -57,6 +57,7 @@ export default function Telemetry() {
       />
       {Array.from({ length: robotCount }, (_, i) => {
         const color = world.robots[i]?.color ?? "#2dd4bf";
+        const name = world.robots[i]?.name ?? `#${i}`;
         const front = readouts[i]?.front ?? 0;
         return (
           <Sparkline
@@ -65,7 +66,7 @@ export default function Telemetry() {
             color={color}
             max={range}
             unit="m"
-            label={`#${i} front clearance`}
+            label={`${name} front clearance`}
             value={front >= range ? "clear" : front.toFixed(1)}
           />
         );

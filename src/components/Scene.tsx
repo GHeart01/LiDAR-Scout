@@ -8,6 +8,7 @@ import { useStore } from "../store";
 import Arena from "./Arena";
 import Obstacles from "./Obstacles";
 import Robots from "./Robots";
+import Prey from "./Prey";
 import DiscoveredMap from "./DiscoveredMap";
 import SimulationRunner from "./SimulationRunner";
 
@@ -55,6 +56,7 @@ export default function Scene({ backend = "webgl" }: { backend?: Backend }) {
       <DiscoveredMap />
       <Obstacles />
       <Robots />
+      <Prey />
       <SimulationRunner />
 
       {effects && (
