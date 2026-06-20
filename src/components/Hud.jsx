@@ -29,7 +29,7 @@ export default function Hud() {
         <span><i className="dot beam" />active beam</span>
         <span><i className="dot hit" />lidar hit</span>
         <span><i className="dot safe" />safety ring</span>
-        <span className="hint">drag the robot or boxes to reposition</span>
+        <span className="hint">drag robot/boxes to move · drag empty space to orbit · scroll to zoom</span>
       </div>
     </>
   );

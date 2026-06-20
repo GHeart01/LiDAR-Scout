@@ -1,5 +1,5 @@
 import { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ARENA } from "../sim/constants.js";
 import { simulation } from "../sim/instance.js";
@@ -18,6 +18,7 @@ export default function Robot() {
   const mast = useRef();
   const ring = useRef();
   const dragging = useRef(false);
+  const controls = useThree((s) => s.controls);
 
   // Safety ring geometry (unit radius, scaled to safeDist each frame).
   const ringGeom = useMemo(() => {
@@ -50,10 +51,12 @@ export default function Robot() {
         onPointerDown={(e) => {
           e.stopPropagation();
           dragging.current = true;
+          if (controls) controls.enabled = false;
           e.target.setPointerCapture(e.pointerId);
         }}
         onPointerUp={(e) => {
           dragging.current = false;
+          if (controls) controls.enabled = true;
           e.target.releasePointerCapture?.(e.pointerId);
         }}
         onPointerMove={(e) => {

@@ -18,6 +18,9 @@ export const useStore = create((set) => ({
   running: false,
   paused: false,
 
+  // Camera view: 'iso' (tilted 3D) or 'top' (top-down)
+  view: "iso",
+
   // Tunable parameters
   simSpeed: 1,
   driveSpeed: 6,
@@ -32,6 +35,7 @@ export const useStore = create((set) => ({
   obstacles: seedObstacles(),
 
   setParam: (key, value) => set({ [key]: value }),
+  setView: (view) => set({ view }),
   setPaused: (paused) => set({ paused }),
   setRunning: (running) => set({ running }),
   setFsmState: (fsmState) => set({ fsmState }),

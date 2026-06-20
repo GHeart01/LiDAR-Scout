@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ARENA } from "../sim/constants.js";
 import { addTarget, removeTarget } from "../sim/instance.js";
@@ -15,6 +16,7 @@ function clamp(v) {
 function Obstacle({ o }) {
   const ref = useRef();
   const dragging = useRef(false);
+  const controls = useThree((s) => s.controls);
   const setObstaclePos = useStore((s) => s.setObstaclePos);
 
   useEffect(() => {
@@ -30,10 +32,12 @@ function Obstacle({ o }) {
       onPointerDown={(e) => {
         e.stopPropagation();
         dragging.current = true;
+        if (controls) controls.enabled = false;
         e.target.setPointerCapture(e.pointerId);
       }}
       onPointerUp={(e) => {
         dragging.current = false;
+        if (controls) controls.enabled = true;
         e.target.releasePointerCapture?.(e.pointerId);
       }}
       onPointerMove={(e) => {
