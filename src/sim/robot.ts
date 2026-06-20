@@ -41,6 +41,9 @@ export class Robot {
   pathIndex = 0;
 
   chaseTarget = { x: 0, z: 0 };
+  private startX = 0;
+  private startZ = 0;
+  private startHeading = 0;
   private replanAcc = 0;
   private chaseReplan: number; // how often this robot re-plans (s)
   private scatterX: number;
@@ -66,6 +69,9 @@ export class Robot {
   }
 
   resetTo(x: number, z: number, heading: number): void {
+    this.startX = x;
+    this.startZ = z;
+    this.startHeading = heading;
     this.position.set(x, 0, z);
     this.heading = heading;
     this.state = "IDLE";
@@ -299,6 +305,14 @@ export class Robot {
         this.drive(dt, world);
         break;
       case "AVOID":
+        // Stuck avoiding for too long: teleport back to the start pose.
+        if (this.timer >= 7) {
+          this.position.set(this.startX, 0, this.startZ);
+          this.heading = this.startHeading;
+          this.path = null;
+          this.enter("CHASE");
+          break;
+        }
         this.turnToward(this.bestDirectionDeg(hd) * DEG, dt);
         if (this.timer > 0.4 && front > params.safeDist) {
           this.path = null;
