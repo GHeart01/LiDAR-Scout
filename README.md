@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/GHeart01/LiDAR-Scout/actions/workflows/ci.yml/badge.svg)](https://github.com/GHeart01/LiDAR-Scout/actions/workflows/ci.yml)
 
+![preview](image.png "Preview Image")
+
 A **multi-robot LiDAR pursuit simulator** built with **React Three Fiber +
 TypeScript**. Four Pac-Man-coloured robots sweep a noisy 360° LiDAR, build a
 shared occupancy map, and **chase a roaming yellow "prey" light** using **A\*
